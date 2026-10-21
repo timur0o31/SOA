@@ -1,7 +1,7 @@
 openapi: 3.0.0
 
 info:
-  version: 1.0.1
+  version: 1.1.0
   title: Booking Service API
 
 servers:
@@ -298,12 +298,21 @@ paths:
                 title: Not Found
                 status: 404
                 detail: Человек с id=13 не найден
+        '502':
+          description: Ошибка или недоступность Ticket Service. При потере ответа после commit результат команды может быть неизвестен клиенту.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /event/{event-id}/cancel:
     post:
       tags:
         - Booking
-      description: отменить указанное событие, удалив все билеты на него
+      description: >-
+        Отменить событие, отправив одну HTTPS-команду в Ticket Service.
+        Все билеты события удаляются одним DELETE в программной JTA-транзакции
+        первого сервиса. При ошибке удаление полностью откатывается.
       parameters:
         - name: event-id
           in: path
@@ -335,3 +344,9 @@ paths:
                 title: Not Found
                 status: 404
                 detail: Билеты с eventId=13 не найден
+        '502':
+          description: Ошибка или недоступность Ticket Service. При потере ответа после commit результат команды может быть неизвестен клиенту.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
