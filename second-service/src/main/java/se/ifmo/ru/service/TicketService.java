@@ -17,6 +17,8 @@ import se.ifmo.ru.mapper.TicketMapper;
 import se.ifmo.ru.model.Person;
 import se.ifmo.ru.model.Ticket;
 import se.ifmo.ru.repository.TicketRepository;
+import se.ifmo.ru.enums.IsolationType;
+import se.ifmo.ru.isolation.TransactionIsolation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,7 @@ public class TicketService {
     @Inject
     private TicketMapper ticketMapper;
 
+    @Transactional(Transactional.TxType.SUPPORTS)
     public TicketResponseDto findById(Long ticketId) {
         log.info("Поиск билета: ticketId={}", ticketId);
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
@@ -41,7 +44,7 @@ public class TicketService {
         return ticketMapper.toTicketResponseDto(ticket);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto saveTicket(TicketCreateDto ticketCreateDto) {
         log.info("Создание билета: eventId={}", ticketCreateDto.eventId());
         Person person = parsePerson(ticketCreateDto.personId(), ticketCreateDto.person());
@@ -52,7 +55,7 @@ public class TicketService {
         return ticketMapper.toTicketResponseDto(saved);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto sellWithDiscount(long ticketId, long personId, float discount) {
         log.info("Продажа билета со скидкой: ticketId={}, personId={}, скидка={}", ticketId, personId, discount);
         TicketResponseDto source = findById(ticketId);
@@ -62,7 +65,7 @@ public class TicketService {
         return saveTicket(sale);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public void deleteTicketById(Long ticketId){
         log.info("Удаление билета: ticketId={}", ticketId);
         int deleted = ticketRepository.deleteTicketById(ticketId);
@@ -72,7 +75,7 @@ public class TicketService {
         log.info("Запрос на удаление билета выполнен: ticketId={}", ticketId);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto updateTicket(Long ticketId, TicketUpdateDto ticketCreateDto) {
         log.info("Обновление билета: ticketId={}", ticketId);
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
@@ -95,19 +98,24 @@ public class TicketService {
         return personService.savePersonEntity(personDto.toCreate());
     }
 
+    @Transactional(Transactional.TxType.SUPPORTS)
     public Long countByPerson(Long personId) {
         return ticketStatisticsService.countByPerson(personId);
     }
+    @Transactional(Transactional.TxType.SUPPORTS)
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
 
+    @Transactional(Transactional.TxType.SUPPORTS)
     public Double getAvg(){
         return ticketStatisticsService.getAvg();
     }
 
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionIsolation(IsolationType.REPEATABLE_READ)
     public ResponsePaginationDto<TicketResponseDto> search(SearchDto<TicketSearchFilterDto> dto) {
-        log.debug("Поиск билетов: страница={}, размер={}", dto.getPage(), dto.getSize());
+        log.info("Поиск билетов: страница={}, размер={}", dto.getPage(), dto.getSize());
         SearchValidation.validateSorts(dto.getSort(), Set.of("id", "name", "coordinates.x", "coordinates.y", "creationDate", "price", "type", "person.birthday", "person.weight", "person.location.x", "person.location.y", "person.location.name", "eventId"));
         List<Sort<Ticket>> sorts = new ArrayList<>();
         if (dto.getSort() != null) {
@@ -142,6 +150,8 @@ public class TicketService {
         return ResponsePaginationDto.ans(content, dto.getPage(), dto.getSize(), totalCount);
     }
 
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionIsolation(IsolationType.REPEATABLE_READ)
     public ResponsePaginationDto<TicketResponseDto> getTickets(long page, int size) {
         return search(new SearchDto<TicketSearchFilterDto>(null, page, (long) size, null));
     }
