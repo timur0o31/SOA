@@ -5,12 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
-import jakarta.transaction.Transactional;
-import org.hibernate.StatelessSession;
 import se.ifmo.ru.enums.IsolationType;
-import se.ifmo.ru.repository.TicketRepository;
-
-import java.sql.Statement;
 
 @Interceptor
 @TransactionIsolation(IsolationType.READ_COMMITTED)

@@ -152,4 +152,14 @@ public class TicketService {
         return search(new SearchDto<TicketSearchFilterDto>(null, page, (long) size, null));
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void cancelEvent(long eventId) {
+        log.info("Начало удаления билетов по eventId={}", eventId);
+        int deleted = ticketRepository.deleteByEventId(eventId);
+        log.info("Запрос на удаление билетов выполнен: eventId={}, количество={}", eventId, deleted);
+        if (deleted == 0) {
+            throw new ResourceNotFoundException("Билеты на событие не найдены");
+        }
+    }
+
 }

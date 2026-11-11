@@ -12,7 +12,13 @@ public class InfraStruct {
     @Inject
     private TicketRepository ticketRepository;
     public void setTransaction(IsolationType isolationType) {
-
+        StatelessSession session = ticketRepository.session();
+        session.joinTransaction();
+        session.doWork(connection -> {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("SET TRANSACTION ISOLATION LEVEL " + isolationType.getType());
+            }
+        });
     }
 
 }

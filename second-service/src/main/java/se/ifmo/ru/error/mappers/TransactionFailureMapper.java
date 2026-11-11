@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Provider
-@Priority(Priorities.USER - 100)
 public class TransactionFailureMapper implements ExceptionMapper<TransactionalException> {
     @Override
     public Response toResponse(TransactionalException exception) {
