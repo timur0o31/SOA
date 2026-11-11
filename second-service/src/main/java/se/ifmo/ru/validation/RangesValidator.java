@@ -1,16 +1,15 @@
 package se.ifmo.ru.validation;
 
 import jakarta.validation.ConstraintValidatorContext;
-// скорее всего лучше это сделать как util класс
 public interface RangesValidator {
-    default <T extends Comparable<? super T>> boolean isValidRange(T from, T to) {
+    default <T extends Comparable<T>> boolean isValidRange(T from, T to) {
         if (from == null || to == null) {
             return true;
         }
         return from.compareTo(to) <= 0;
     }
 
-    default <T extends Comparable<? super T>> boolean validateRange(T from, T to, String field, String message,
+    default <T extends Comparable<T>> boolean validateRange(T from, T to, String field, String message,
                                                                     ConstraintValidatorContext context) {
         if (isValidRange(from, to)) return true;
         addMessage(context, field, message);

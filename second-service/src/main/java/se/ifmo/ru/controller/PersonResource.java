@@ -36,8 +36,7 @@ public class PersonResource {
     @POST
     public Response createPerson(@NotNull @Valid PersonCreateDto personDto,@Context UriInfo uriInfo) {
         PersonResponseDto responseDto = personService.savePerson(personDto);
-        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(responseDto.id())).build();
-        return Response.created(location).entity(responseDto).build();
+        return Response.ok(responseDto).build();
     }
 
     @DELETE

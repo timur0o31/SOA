@@ -14,7 +14,6 @@ import se.ifmo.ru.dto.request.*;
 
 import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
-import se.ifmo.ru.service.EventCancellationService;
 
 @Path("/tickets")
 @Produces(MediaType.APPLICATION_JSON)
@@ -23,13 +22,10 @@ public class TicketResource {
     @Inject
     private TicketService ticketService;
 
-    @Inject
-    private EventCancellationService eventCancellationService;
-
     @POST
     @Path("/cancel-event/{event-id}")
     public Response cancelEvent(@PathParam("event-id") @Min(1) Long eventId) {
-        eventCancellationService.cancelEvent(eventId);
+        ticketService.cancelEvent(eventId);
         return Response.noContent().build();
     }
 
@@ -56,9 +52,9 @@ public class TicketResource {
     }
 
     @POST
-    public Response createTicket(@NotNull @Valid TicketCreateDto dto){
-        TicketResponseDto responseDto = ticketService.saveTicket(dto);
-        return Response.status(Response.Status.CREATED).entity(responseDto).build();
+    public Response createTicket(@NotNull @Valid TicketCreateDto dto, @Context UriInfo uriInfo){
+        TicketResponseDto responseDto = ticketService.saveTicket(dto);;
+        return Response.ok(responseDto).build();
     }
 
     @DELETE
