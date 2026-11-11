@@ -1,15 +1,12 @@
 package se.ifmo.ru.isolation;
 
 import jakarta.annotation.Priority;
-import jakarta.annotation.Resource;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
-import jakarta.transaction.Status;
 import jakarta.transaction.Transactional;
 import java.lang.annotation.Annotation;
-import jakarta.transaction.TransactionSynchronizationRegistry;
 import org.hibernate.StatelessSession;
 import se.ifmo.ru.enums.IsolationType;
 import se.ifmo.ru.repository.TicketRepository;
@@ -23,8 +20,6 @@ public class TransactionIsolationInterceptor {
 
     @Inject
     TicketRepository ticketRepository;
-    @Resource
-    TransactionSynchronizationRegistry transactionRegistry;
 
     @AroundInvoke
     public Object setIsolation(InvocationContext context) throws Exception {
@@ -32,9 +27,6 @@ public class TransactionIsolationInterceptor {
         if (transactional == null || transactional.value() != Transactional.TxType.REQUIRES_NEW) {
             throw new IllegalStateException("@TransactionIsolation требует @Transactional(REQUIRES_NEW): "
                     + context.getMethod().getName());
-        }
-        if (transactionRegistry.getTransactionStatus() != Status.STATUS_ACTIVE) {
-            throw new IllegalStateException("@TransactionIsolation требует активную транзакцию");
         }
         TransactionIsolation annotation = annotation(context, TransactionIsolation.class);
         if (annotation == null) {
