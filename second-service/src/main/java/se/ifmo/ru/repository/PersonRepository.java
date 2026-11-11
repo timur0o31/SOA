@@ -48,7 +48,6 @@ public interface PersonRepository extends CrudRepository<Person, Long> {
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Person> root = query.from(Person.class);
-
         query.select(cb.count(root))
                 .where(PersonCriteriaSearch.predicates(cb, root, filter));
         return session.createQuery(query).getSingleResult();
