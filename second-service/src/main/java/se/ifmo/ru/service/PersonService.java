@@ -31,7 +31,6 @@ public class PersonService {
     @Inject
     private TicketStatisticsService ticketStatisticsService;
 
-    @Transactional(Transactional.TxType.SUPPORTS)
     public PersonResponseDto findById(Long personId) {
         log.debug("Поиск человека: personId={}", personId);
         Person person = personRepository.findById(personId).orElseThrow(
@@ -44,7 +43,7 @@ public class PersonService {
         return personMapper.toPersonResponseDto(person);
     }
 
-    @Transactional(Transactional.TxType.MANDATORY)
+    @Transactional(Transactional.TxType.REQUIRED)
     public Person savePersonEntity(PersonCreateDto personCreateDto) {
         log.info("Создание человека");
         Person person = personMapper.toPerson(personCreateDto);
@@ -75,7 +74,6 @@ public class PersonService {
         return personMapper.toPersonResponseDto(newPerson);
     }
 
-    @Transactional(Transactional.TxType.SUPPORTS)
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilterDto> requestDto) {
         log.info("Поиск людей: страница={}, размер={}", requestDto.getPage(), requestDto.getSize());
         SearchValidation.validateSorts(requestDto.getSort(), Set.of("id", "birthday", "weight", "location.x", "location.y", "location.name"));
@@ -104,12 +102,10 @@ public class PersonService {
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);
     }
 
-    @Transactional(Transactional.TxType.SUPPORTS)
     public ResponsePaginationDto<PersonResponseDto> getPersons(long page, int size) {
         return search(new SearchDto<PersonSearchFilterDto>(null, page, (long) size, null));
     }
 
-    @Transactional(Transactional.TxType.SUPPORTS)
     public Person getPersonById(Long personId) {
         return personRepository.findById(personId).orElseThrow(
                 () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
