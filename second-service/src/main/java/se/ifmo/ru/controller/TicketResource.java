@@ -52,9 +52,9 @@ public class TicketResource {
     }
 
     @POST
-    public Response createTicket(@NotNull @Valid TicketCreateDto dto, @Context UriInfo uriInfo){
-        TicketResponseDto responseDto = ticketService.saveTicket(dto);;
-        return Response.ok(responseDto).build();
+    public Response createTicket(@NotNull @Valid TicketCreateDto dto){
+        TicketResponseDto responseDto = ticketService.saveTicket(dto);
+        return Response.status(Response.Status.CREATED).entity(responseDto).build();
     }
 
     @DELETE

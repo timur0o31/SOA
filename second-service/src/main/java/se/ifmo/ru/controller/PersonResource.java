@@ -6,10 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriInfo;
 import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.PersonInputDto;
 
@@ -18,8 +16,6 @@ import se.ifmo.ru.dto.request.PersonSearchFilterDto;
 import se.ifmo.ru.dto.request.SearchDto;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.service.PersonService;
-
-import java.net.URI;
 
 @Path("/persons")
 @Produces(MediaType.APPLICATION_JSON)
@@ -34,9 +30,9 @@ public class PersonResource {
     }
 
     @POST
-    public Response createPerson(@NotNull @Valid PersonCreateDto personDto,@Context UriInfo uriInfo) {
+    public Response createPerson(@NotNull @Valid PersonCreateDto personDto) {
         PersonResponseDto responseDto = personService.savePerson(personDto);
-        return Response.ok(responseDto).build();
+        return Response.status(Response.Status.CREATED).entity(responseDto).build();
     }
 
     @DELETE
