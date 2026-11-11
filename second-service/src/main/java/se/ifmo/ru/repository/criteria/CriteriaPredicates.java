@@ -19,8 +19,4 @@ public final class CriteriaPredicates {
         return "%" + value.toLowerCase(Locale.ROOT).replace("\\", "\\\\")
                 .replace("%", "\\%").replace("_", "\\_") + "%";
     }
-
-    public static Predicate equalOrNull(CriteriaBuilder cb, Path<?> path, Object value) {
-        return value == null ? cb.isNull(path) : cb.equal(path, value);
-    }
 }
