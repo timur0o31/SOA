@@ -16,8 +16,6 @@ import se.ifmo.ru.dto.response.TicketResponseDto;
 import se.ifmo.ru.service.TicketService;
 import se.ifmo.ru.service.EventCancellationService;
 
-import java.net.URI;
-
 @Path("/tickets")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -58,10 +56,9 @@ public class TicketResource {
     }
 
     @POST
-    public Response createTicket(@NotNull @Valid TicketCreateDto dto, @Context UriInfo uriInfo){
+    public Response createTicket(@NotNull @Valid TicketCreateDto dto){
         TicketResponseDto responseDto = ticketService.saveTicket(dto);
-        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(responseDto.id())).build();
-        return Response.created(location).entity(responseDto).build();
+        return Response.status(Response.Status.CREATED).entity(responseDto).build();
     }
 
     @DELETE
