@@ -16,18 +16,9 @@ public class ConstraintViolationExceptionMapper implements ExceptionMapper<Const
     public Response toResponse(ConstraintViolationException exception) {
         String detail = exception.getConstraintViolations().stream()
                 .map(violation ->
-                        fieldName(violation.getPropertyPath()) + ": " + violation.getMessage())
+                        (violation.getPropertyPath()) + ": " + violation.getMessage())
                 .distinct()
-                .collect(Collectors.joining("; "));
+                .collect(Collectors.joining(";"));
         return ErrorResponses.build(Response.Status.BAD_REQUEST, detail);
-    }
-
-    private String fieldName(Path path) {
-        StringJoiner field = new StringJoiner(".");
-        for (Path.Node node : path) {
-            if (node.getKind() == ElementKind.PROPERTY)
-                field.add(node.getName());
-        }
-        return field.length() == 0 ? "$" : field.toString();
     }
 }
