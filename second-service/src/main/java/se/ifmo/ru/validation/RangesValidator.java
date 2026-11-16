@@ -2,16 +2,17 @@ package se.ifmo.ru.validation;
 
 import jakarta.validation.ConstraintValidatorContext;
 public interface RangesValidator {
-    default <T extends Comparable<T>> boolean isValidRange(T from, T to) {
-        if (from == null || to == null) {
+    default <T extends Comparable<T>> boolean isValidRange(T fromValue, T toValue) {
+        if (fromValue == null || toValue == null) {
             return true;
         }
-        return from.compareTo(to) <= 0;
+        return fromValue.compareTo(toValue) <= 0;
     }
 
-    default <T extends Comparable<T>> boolean validateRange(T from, T to, String field, String message,
-                                                                    ConstraintValidatorContext context) {
-        if (isValidRange(from, to)) return true;
+    default <T extends Comparable<T>> boolean validateRange(T fromValue, T toValue, String field,
+                                                            String message, ConstraintValidatorContext context) {
+        if (isValidRange(fromValue, toValue))
+            return true;
         addMessage(context, field, message);
         return false;
     }

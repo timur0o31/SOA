@@ -17,13 +17,10 @@ import se.ifmo.ru.mapper.TicketMapper;
 import se.ifmo.ru.model.Person;
 import se.ifmo.ru.model.Ticket;
 import se.ifmo.ru.repository.TicketRepository;
-import se.ifmo.ru.enums.IsolationType;
-import se.ifmo.ru.isolation.TransactionIsolation;
+
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 @Slf4j
 @ApplicationScoped
 public class TicketService {
@@ -38,8 +35,7 @@ public class TicketService {
 
     public TicketResponseDto findById(Long ticketId) {
         log.info("Поиск билета: ticketId={}", ticketId);
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
-                () -> new ResourceNotFoundException("Билет с id " + ticketId + " не найден"));
+        Ticket ticket = ticketRepository.findById(ticketId);
         return ticketMapper.toTicketResponseDto(ticket);
     }
 
@@ -49,9 +45,9 @@ public class TicketService {
         Person person = parsePerson(ticketCreateDto.personId(), ticketCreateDto.person());
         Ticket ticket = ticketMapper.toTicket(ticketCreateDto);
         ticket.setPerson(person);
-        Ticket saved = ticketRepository.insert(ticket);
-        log.info("Запрос на создание билета выполнен: ticketId={}, eventId={}", saved.getId(), saved.getEventId());
-        return ticketMapper.toTicketResponseDto(saved);
+        ticketRepository.save(ticket);
+        log.info("Запрос на создание билета выполнен: ticketId={}, eventId={}", ticket.getId(), ticket.getEventId());
+        return ticketMapper.toTicketResponseDto(ticket);
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -67,26 +63,22 @@ public class TicketService {
     @Transactional(Transactional.TxType.REQUIRED)
     public void deleteTicketById(Long ticketId){
         log.info("Удаление билета: ticketId={}", ticketId);
-        int deleted = ticketRepository.deleteTicketById(ticketId);
-        if (deleted == 0) {
-            throw new ResourceNotFoundException("Билет с id " + ticketId + " не найден");
-        }
+        ticketRepository.deleteById(ticketId);
         log.info("Запрос на удаление билета выполнен: ticketId={}", ticketId);
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto updateTicket(Long ticketId, TicketUpdateDto ticketCreateDto) {
         log.info("Обновление билета: ticketId={}", ticketId);
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(
-                () -> new ResourceNotFoundException("Билет с id " + ticketId + " не найден"));
+        Ticket ticket = ticketRepository.findById(ticketId);
         Person person = parsePerson(null, ticketCreateDto.person());
         ticketMapper.updateTicket(ticketCreateDto, ticket);
         ticket.setPerson(person);
-        Ticket updated = ticketRepository.update(ticket);
+        ticketRepository.update(ticket);
         log.info("Запрос на обновление билета выполнен: ticketId={}", ticketId);
-        return ticketMapper.toTicketResponseDto(updated);
+        return ticketMapper.toTicketResponseDto(ticket);
     }
-
+    //подумать вот тут уже реально можно задуматься про propagation и уровни изоляций
     private Person parsePerson(Long personId, PersonInputDto personDto) {
         if (personId == null && personDto == null)
             throw new RequestValidationException("person", "Укажите personId или person");
@@ -103,13 +95,11 @@ public class TicketService {
     public Double getSum(){
         return ticketStatisticsService.getSum();
     }
-
     public Double getAvg(){
         return ticketStatisticsService.getAvg();
     }
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    @TransactionIsolation(IsolationType.REPEATABLE_READ)
     public ResponsePaginationDto<TicketResponseDto> search(SearchDto<TicketSearchFilterDto> dto) {
         log.info("Поиск билетов: страница={}, размер={}", dto.getPage(), dto.getSize());
         SearchValidation.validateSorts(dto.getSort(), Set.of("id", "name", "coordinates.x", "coordinates.y", "creationDate", "price", "type", "person.birthday", "person.weight", "person.location.x", "person.location.y", "person.location.name", "eventId"));
@@ -147,13 +137,12 @@ public class TicketService {
     }
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    @TransactionIsolation(IsolationType.REPEATABLE_READ)
-    public ResponsePaginationDto<TicketResponseDto> getTickets(long page, int size) {
+    public ResponsePaginationDto<TicketResponseDto> getTickets(Long page, Integer size) {
         return search(new SearchDto<TicketSearchFilterDto>(null, page, (long) size, null));
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public void cancelEvent(long eventId) {
+    public void cancelEvent(Long eventId) {
         log.info("Начало удаления билетов по eventId={}", eventId);
         int deleted = ticketRepository.deleteByEventId(eventId);
         log.info("Запрос на удаление билетов выполнен: eventId={}, количество={}", eventId, deleted);

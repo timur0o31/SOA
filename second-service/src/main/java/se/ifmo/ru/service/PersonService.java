@@ -33,8 +33,7 @@ public class PersonService {
 
     public PersonResponseDto findById(Long personId) {
         log.debug("Поиск человека: personId={}", personId);
-        Person person = personRepository.findById(personId).orElseThrow(
-                () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
+        Person person = personRepository.findById(personId);
         return personMapper.toPersonResponseDto(person);
     }
     @Transactional(Transactional.TxType.REQUIRED)
@@ -47,17 +46,18 @@ public class PersonService {
     public Person savePersonEntity(PersonCreateDto personCreateDto) {
         log.info("Создание человека");
         Person person = personMapper.toPerson(personCreateDto);
-        Person saved = personRepository.insert(person);
-        log.info("Запрос на создание человека выполнен: personId={}", saved.getId());
-        return saved;
+        personRepository.save(person);
+        log.info("Запрос на создание человека выполнен.");
+        return person;
     }
+
     @Transactional(Transactional.TxType.REQUIRED)
     public void deletePersonById(Long personId){
         log.info("Удаление человека: personId={}", personId);
-        if (personRepository.findById(personId).isPresent()) {
+        if (personRepository.findByIdSerializable(personId)!=null) {
             long count = ticketStatisticsService.countByPerson(personId);
             if (count > 0) throw new ResourceConflictException("Человек с id " + personId + " используется в билетах; количество: " + count);
-            personRepository.deleteById(personId);
+            personRepository.deleteByIdSerializable(personId);
             log.info("Запрос на удаление человека выполнен: personId={}", personId);
         }else{
             throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
@@ -66,12 +66,11 @@ public class PersonService {
     @Transactional(Transactional.TxType.REQUIRED)
     public PersonResponseDto updatePerson(Long personId, PersonCreateDto personCreateDto) {
         log.info("Обновление человека: personId={}", personId);
-        Person person = personRepository.findById(personId).orElseThrow(
-                () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
+        Person person = personRepository.findById(personId);
         personMapper.updatePersonFromDto(personCreateDto, person);
-        Person newPerson = personRepository.update(person);
+        personRepository.update(person);
         log.info("Запрос на обновление человека выполнен: personId={}", personId);
-        return personMapper.toPersonResponseDto(newPerson);
+        return personMapper.toPersonResponseDto(person);
     }
 
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilterDto> requestDto) {
@@ -107,7 +106,6 @@ public class PersonService {
     }
 
     public Person getPersonById(Long personId) {
-        return personRepository.findById(personId).orElseThrow(
-                () -> new ResourceNotFoundException("Человек с id " + personId + " не найден"));
+        return personRepository.findById(personId);
     }
 }

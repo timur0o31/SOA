@@ -2,31 +2,28 @@ package se.ifmo.ru.repository;
 
 import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
-import jakarta.data.repository.By;
-import jakarta.data.repository.CrudRepository;
-import jakarta.data.repository.Delete;
-import jakarta.data.repository.Repository;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.*;
-import org.hibernate.StatelessSession;
 import se.ifmo.ru.dto.request.TicketSearchFilterDto;
+import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.model.Ticket;
-import se.ifmo.ru.repository.criteria.CriteriaPredicates;
 import se.ifmo.ru.repository.criteria.TicketCriteriaSearch;
 
 import java.util.ArrayList;
 import java.util.List;
+@ApplicationScoped
+public class TicketRepository {
 
-@Repository(provider = "Hibernate", dataStore = "default")
-public interface    TicketRepository extends CrudRepository<Ticket, Long> {
+    @PersistenceContext(unitName = "default")
+    private EntityManager em;
 
-     @Delete
-     int deleteTicketById(@By("id") Long ticketId);
+    @PersistenceContext(unitName = "serializable")
+    private EntityManager serializableEm;
 
-    StatelessSession session();
-
-    default List<Ticket> search(TicketSearchFilterDto filter, PageRequest pageRequest, List<Sort<Ticket>> sorts) {
-        StatelessSession session = session();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
+    public List<Ticket> search(TicketSearchFilterDto filter, PageRequest pageRequest, List<Sort<Ticket>> sorts) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Ticket> query = cb.createQuery(Ticket.class);
         Root<Ticket> root = query.from(Ticket.class);
         List<Order> orderBy = new ArrayList<>();
@@ -44,50 +41,71 @@ public interface    TicketRepository extends CrudRepository<Ticket, Long> {
                 .where(TicketCriteriaSearch.predicates(cb, root, filter))
                 .orderBy(orderBy);
         int offset = Math.toIntExact(Math.multiplyExact(pageRequest.page() - 1, (long) pageRequest.size()));
-        return session.createQuery(query)
+        return em.createQuery(query)
                 .setFirstResult(offset)
                 .setMaxResults(pageRequest.size())
                 .getResultList();
     }
 
-    default Long count(TicketSearchFilterDto filter) {
-        StatelessSession session = session();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
+    public Long count(TicketSearchFilterDto filter) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Ticket> root = query.from(Ticket.class);
-
         query.select(cb.count(root))
                 .where(TicketCriteriaSearch.predicates(cb, root, filter));
-        return session.createQuery(query).getSingleResult();
+        return em.createQuery(query).getSingleResult();
     }
 
-    default Double getPriceSum(){
-        return session()
-                .createQuery("SELECT sum(t.price) FROM Ticket t", Double.class)
+    public Double getPriceSum(){
+        return em.createQuery("SELECT sum(t.price) FROM Ticket t", Double.class)
                 .getSingleResult();
     }
 
-    default Double averagePrice(){
-        return session()
-                .createQuery("SELECT avg(t.price) FROM Ticket t", Double.class)
+    public Double averagePrice(){
+        return em.createQuery("SELECT avg(t.price) FROM Ticket t", Double.class)
                 .getSingleResult();
     }
 
-    default int deleteByEventId(long eventId) {
-        return session()
-                .createQuery("DELETE FROM Ticket t WHERE t.eventId = :eventId")
+    public int deleteByEventId(Long eventId) {
+        return em.createQuery("DELETE FROM Ticket t WHERE t.eventId = :eventId")
                 .setParameter("eventId", eventId)
                 .executeUpdate();
     }
 
-
-    default Long countByPerson(Long personId) {
-        StatelessSession session = session();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
+    public Long countByPerson(Long personId) {
+        CriteriaBuilder cb = serializableEm.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Ticket> ticket = query.from(Ticket.class);
         query.select(cb.count(ticket))
                 .where(cb.equal(ticket.get("person").get("id"), personId));
-        return session.createQuery(query).getSingleResult();
+        return serializableEm.createQuery(query).getSingleResult();
+    }
+    public void saveSerializable(Ticket ticket) {
+        serializableEm.persist(ticket);
+    }
+
+    public Ticket findById(Long id){
+        Ticket ticket = em.find(Ticket.class, id);
+        if (ticket == null){
+            throw new ResourceNotFoundException("Билет с id " + id + " не найден");
+        }
+        return ticket;
+    }
+
+    public void update(Ticket ticket){
+        em.merge(ticket);
+    }
+
+    public void save(Ticket ticket){
+        em.persist(ticket);
+    }
+
+    public void deleteById(Long id){
+        Ticket ticket = em.find(Ticket.class, id);
+        if (ticket != null){
+            em.remove(ticket);
+        } else {
+            throw new ResourceNotFoundException("Билет с id " + id + " не найден");
+        }
     }
 }

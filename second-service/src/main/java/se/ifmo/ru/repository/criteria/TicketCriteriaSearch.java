@@ -14,81 +14,82 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static se.ifmo.ru.repository.criteria.CriteriaPredicates.add;
-import static se.ifmo.ru.repository.criteria.CriteriaPredicates.contains;
 
 public final class TicketCriteriaSearch {
     private TicketCriteriaSearch() {}
 
     public static Predicate[] predicates(CriteriaBuilder cb, Root<Ticket> ticket,
                                          TicketSearchFilterDto filter) {
-        List<Predicate> result = new ArrayList<>();
+        List<Predicate> predicates = new ArrayList<>();
         if (filter == null) return new Predicate[0];
-        addTicketFields(cb, ticket, filter, result);
-        addCoordinates(cb, ticket, filter, result);
-        addCreationDate(cb, ticket, filter, result);
-        addPersonFields(cb, ticket, filter, result);
-        return result.toArray(Predicate[]::new);
+        addTicketFields(cb, ticket, filter, predicates);
+        addCoordinates(cb, ticket, filter, predicates);
+        addCreationDate(cb, ticket, filter, predicates);
+        addPersonFields(cb, ticket, filter, predicates);
+        return predicates.toArray(Predicate[]::new);
     }
 
     private static void addTicketFields(CriteriaBuilder cb, Root<Ticket> ticket,
-                                         TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.getId(),
+                                         TicketSearchFilterDto filter, List<Predicate> predicates) {
+        CritPredicates.add(predicates, filter.getId(),
                 value -> cb.equal(ticket.get(Ticket_.id), value));
-        add(result, filter.getNameContains(),
-                value -> cb.like(cb.lower(ticket.get(Ticket_.name)), contains(value), '\\'));
-        add(result, filter.getPriceFrom(),
+
+        if (filter.getNameContains() != null)
+            predicates.add(cb.like(cb.lower(ticket.get(Ticket_.name)),
+                    "%" + filter.getNameContains().toLowerCase() + "%"));
+        CritPredicates.add(predicates, filter.getPriceFrom(),
                 value -> cb.ge(ticket.get(Ticket_.price), value));
-        add(result, filter.getPriceTo(),
+        CritPredicates.add(predicates, filter.getPriceTo(),
                 value -> cb.le(ticket.get(Ticket_.price), value));
+
         if (filter.isTypeSpecified()) {
-            result.add(filter.getType() == null
-                    ? cb.isNull(ticket.get(Ticket_.type))
-                    : cb.equal(ticket.get(Ticket_.type), filter.getType()));
+            if (filter.getType() == null) predicates.add(cb.isNull(ticket.get(Ticket_.type)));
+            else predicates.add(cb.equal(ticket.get(Ticket_.type), filter.getType()));
         }
-        add(result, filter.getEventId(),
+        CritPredicates.add(predicates, filter.getEventId(),
                 value -> cb.equal(ticket.get(Ticket_.eventId), value));
     }
 
     private static void addCoordinates(CriteriaBuilder cb, Root<Ticket> ticket,
-                                         TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.getCoordinatesXFrom(),
+                                         TicketSearchFilterDto filter, List<Predicate> predicates) {
+        CritPredicates.add(predicates, filter.getCoordinatesXFrom(),
                 value -> cb.ge(ticket.get(Ticket_.coordinates).get(Coordinates_.x), value));
-        add(result, filter.getCoordinatesXTo(),
+        CritPredicates.add(predicates, filter.getCoordinatesXTo(),
                 value -> cb.le(ticket.get(Ticket_.coordinates).get(Coordinates_.x), value));
-        add(result, filter.getCoordinatesYFrom(),
+        CritPredicates.add(predicates, filter.getCoordinatesYFrom(),
                 value -> cb.ge(ticket.get(Ticket_.coordinates).get(Coordinates_.y), value));
-        add(result, filter.getCoordinatesYTo(),
+        CritPredicates.add(predicates, filter.getCoordinatesYTo(),
                 value -> cb.le(ticket.get(Ticket_.coordinates).get(Coordinates_.y), value));
     }
 
     private static void addCreationDate(CriteriaBuilder cb, Root<Ticket> ticket,
-                                         TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.getCreationDateFrom(),
+                                         TicketSearchFilterDto filter, List<Predicate> predicates) {
+        CritPredicates.add(predicates, filter.getCreationDateFrom(),
                 value -> cb.greaterThanOrEqualTo(ticket.get(Ticket_.creationDate), Date.from(value.toInstant())));
-        add(result, filter.getCreationDateTo(),
+        CritPredicates.add(predicates, filter.getCreationDateTo(),
                 value -> cb.lessThanOrEqualTo(ticket.get(Ticket_.creationDate), Date.from(value.toInstant())));
     }
 
     private static void addPersonFields(CriteriaBuilder cb, Root<Ticket> ticket,
-                                         TicketSearchFilterDto filter, List<Predicate> result) {
-        add(result, filter.getPersonBirthday(),
+                                         TicketSearchFilterDto filter, List<Predicate> predicates) {
+        CritPredicates.add(predicates, filter.getPersonBirthday(),
                 value -> cb.equal(ticket.get(Ticket_.person).get(Person_.birthday), value));
-        add(result, filter.getPersonBirthdayFrom(),
+        CritPredicates.add(predicates, filter.getPersonBirthdayFrom(),
                 value -> cb.greaterThanOrEqualTo(ticket.get(Ticket_.person).get(Person_.birthday), value));
-        add(result, filter.getPersonBirthdayTo(),
+        CritPredicates.add(predicates, filter.getPersonBirthdayTo(),
                 value -> cb.lessThanOrEqualTo(ticket.get(Ticket_.person).get(Person_.birthday), value));
-        add(result, filter.getPersonWeight(),
+        CritPredicates.add(predicates, filter.getPersonWeight(),
                 value -> cb.equal(ticket.get(Ticket_.person).get(Person_.weight), value));
-        add(result, filter.getPersonWeightFrom(),
+        CritPredicates.add(predicates, filter.getPersonWeightFrom(),
                 value -> cb.ge(ticket.get(Ticket_.person).get(Person_.weight), value));
-        add(result, filter.getPersonWeightTo(),
+        CritPredicates.add(predicates, filter.getPersonWeightTo(),
                 value -> cb.le(ticket.get(Ticket_.person).get(Person_.weight), value));
-        add(result, filter.getPersonLocationX(),
+        CritPredicates.add(predicates, filter.getPersonLocationX(),
                 value -> cb.equal(ticket.get(Ticket_.person).get(Person_.location).get(Location_.x), value));
-        add(result, filter.getPersonLocationY(),
+        CritPredicates.add(predicates, filter.getPersonLocationY(),
                 value -> cb.equal(ticket.get(Ticket_.person).get(Person_.location).get(Location_.y), value));
-        add(result, filter.getPersonLocationNameContains(),
-                value -> cb.like(cb.lower(ticket.get(Ticket_.person).get(Person_.location).get(Location_.name)), contains(value), '\\'));
+        if (filter.getPersonLocationNameContains() != null)
+            predicates.add(cb.like(cb.lower(ticket.get(Ticket_.person).get(Person_.location).get(Location_.name)),
+                    "%" + filter.getPersonLocationNameContains().toLowerCase() + "%"));
     }
 }

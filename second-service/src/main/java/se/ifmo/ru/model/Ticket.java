@@ -28,8 +28,8 @@ public class Ticket {
     @NotNull
     private Coordinates coordinates;
 
-    @NotNull
     @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private Date creationDate;
 
     @Positive

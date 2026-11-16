@@ -19,8 +19,6 @@ import se.ifmo.ru.dto.request.SearchDto;
 import se.ifmo.ru.dto.response.PersonResponseDto;
 import se.ifmo.ru.service.PersonService;
 
-import java.net.URI;
-
 @Path("/persons")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

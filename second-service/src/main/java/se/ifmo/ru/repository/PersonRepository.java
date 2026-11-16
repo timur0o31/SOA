@@ -4,22 +4,30 @@ import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
 import jakarta.data.repository.CrudRepository;
 import jakarta.data.repository.Repository;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.*;
+import org.hibernate.Session;
 import org.hibernate.StatelessSession;
+import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.model.Person;
 import se.ifmo.ru.dto.request.PersonSearchFilterDto;
 import se.ifmo.ru.repository.criteria.PersonCriteriaSearch;
 
 import java.util.ArrayList;
 import java.util.List;
+@ApplicationScoped
+public class PersonRepository {
 
-@Repository(provider = "Hibernate", dataStore = "default")
-public interface PersonRepository extends CrudRepository<Person, Long> {
-    StatelessSession session();
+    @PersistenceContext
+    private EntityManager em;
 
-    default List<Person> search(PersonSearchFilterDto filter, PageRequest pageRequest, List<Sort<Person>> sorts) {
-        StatelessSession session = session();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
+    @PersistenceContext(unitName = "serializable")
+    private EntityManager serializableEm;
+
+    public List<Person> search(PersonSearchFilterDto filter, PageRequest pageRequest, List<Sort<Person>> sorts) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Person> query = cb.createQuery(Person.class);
         Root<Person> root = query.from(Person.class);
         List<Order> orderBy = new ArrayList<>();
@@ -37,20 +45,51 @@ public interface PersonRepository extends CrudRepository<Person, Long> {
                 .orderBy(orderBy);
 
         int offset = Math.toIntExact(Math.multiplyExact(pageRequest.page() - 1, (long) pageRequest.size()));
-        return session.createQuery(query)
+        return em.createQuery(query)
                 .setFirstResult(offset)
                 .setMaxResults(pageRequest.size())
                 .getResultList();
     }
 
-    default Long count(PersonSearchFilterDto filter) {
-        StatelessSession session = session();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
+    public Long count(PersonSearchFilterDto filter) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Person> root = query.from(Person.class);
         query.select(cb.count(root))
                 .where(PersonCriteriaSearch.predicates(cb, root, filter));
-        return session.createQuery(query).getSingleResult();
+        return em.createQuery(query).getSingleResult();
     }
 
+    public Person findById(Long id) {
+        Person person = em.find(Person.class, id);
+        if (person == null){
+            throw new ResourceNotFoundException("Человек с id " + id + " не найден");
+        }
+        return person;
+    }
+
+    public void update(Person person){
+        em.merge(person);
+    }
+
+    public void save(Person person){
+        em.persist(person);
+    }
+
+    public void deleteById(Long id){
+        Person person = em.find(Person.class, id);
+        if (person != null){
+            em.remove(person);
+        }
+    }
+
+    public Person findByIdSerializable(Long id){
+        return serializableEm.find(Person.class, id);
+    }
+    public void deleteByIdSerializable(Long id){
+        Person person = serializableEm.find(Person.class, id);
+        if (person != null){
+            serializableEm.remove(person);
+        }
+    }
 }

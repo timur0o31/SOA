@@ -17,32 +17,12 @@ public class BookingResource {
 
     @Inject
     private BookingService bookingService;
-    // не уверен, что стоит все делать через String
-    private static long id(String value) {
-        try {
-            if (!value.matches("[0-9]+")) throw new IllegalArgumentException();
-            long id = Long.parseLong(value);
-            if (id < 1) throw new IllegalArgumentException();
-            return id;
-        } catch (RuntimeException e) {
-            throw new RequestValidationException("id", "Ожидается положительный идентификатор в диапазоне int64");
-        }
-    }
 
     @POST
     @Path("/sell/discount/{ticket-id}/{person-id}/{discount}")
-    public Response createTicketWithDiscount(@PathParam("ticket-id") String ticketIdRaw,
-                                             @PathParam("person-id") String personIdRaw,
-                                             @PathParam("discount") String discountRaw) {
-        Long ticketId = id(ticketIdRaw), personId = id(personIdRaw);
-        Float discount;
-        try {
-            BigDecimal n = new BigDecimal(discountRaw);
-            discount = n.floatValue();
-            if (!Float.isFinite(discount) || (discount == 0 && n.signum() != 0)) throw new IllegalArgumentException();
-        } catch (RuntimeException e) {
-            throw new RequestValidationException("discount", "Ожидается конечное число для процента скидки");
-        }
+    public Response createTicketWithDiscount(@PathParam("ticket-id") Long ticketId,
+                                             @PathParam("person-id") Long personId,
+                                             @PathParam("discount") Float discount) {
         String response = bookingService.createTicket(ticketId, personId, discount);
         return Response.status(Response.Status.CREATED)
                 .type(MediaType.APPLICATION_JSON)
@@ -51,8 +31,7 @@ public class BookingResource {
 
     @POST
     @Path("/event/{event-id}/cancel")
-    public Response cancelEvent(@PathParam("event-id") String eventIdRaw) {
-        Long eventId = id(eventIdRaw);
+    public Response cancelEvent(@PathParam("event-id") Long eventId) {
         bookingService.cancelEvent(eventId);
         return Response.noContent().build();
     }

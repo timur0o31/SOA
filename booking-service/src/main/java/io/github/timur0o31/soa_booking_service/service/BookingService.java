@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 public class BookingService {
     @Inject
     private TicketClient ticketClient;
-    //я убрал @Transaction(Transactional.TxType.NOT_SUPPORTED), тут можно вообще не вызывать транзакцию
     public String createTicket(Long ticketId, Long personId, Float discount) {
         log.info("Запрос продажи билета: ticketId={}, personId={}, скидка={}", ticketId, personId, discount);
         return ticketClient.sell(ticketId, personId, discount);
