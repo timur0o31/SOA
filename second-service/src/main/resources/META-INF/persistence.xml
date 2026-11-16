@@ -10,6 +10,7 @@
             <property name = "jakarta.persistence.schema-generation.database.action" value ="none"/>
             <property name="hibernate.transaction.jta.platform"
                       value="org.hibernate.engine.transaction.jta.platform.internal.SunOneJtaPlatform"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
             <property name="hibernate.enhancer.enableLazyInitialization" value="false"/>
@@ -20,9 +21,26 @@
     <persistence-unit name="repeatableRead" transaction-type="JTA">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <jta-data-source>jdbc/RepeatableRead</jta-data-source>
+        <properties>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.generate_statistics" value="true"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <property name="hibernate.enhancer.enableLazyInitialization" value="false"/>
+            <property name="hibernate.enhancer.enableDirtyTracking" value="false"/>
+            <property name="hibernate.enhancer.enableAssociationManagement" value="false"/>
+        </properties>
     </persistence-unit>
     <persistence-unit name="serializable" transaction-type="JTA">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <jta-data-source>jdbc/Serializable</jta-data-source>
+        <properties>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <property name="hibernate.enhancer.enableLazyInitialization" value="false"/>
+            <property name="hibernate.enhancer.enableDirtyTracking" value="false"/>
+            <property name="hibernate.enhancer.enableAssociationManagement" value="false"/>
+        </properties>
     </persistence-unit>
 </persistence>

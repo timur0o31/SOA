@@ -20,7 +20,7 @@ import java.util.List;
 @ApplicationScoped
 public class PersonRepository {
 
-    @PersistenceContext
+    @PersistenceContext(unitName="default")
     private EntityManager em;
 
     @PersistenceContext(unitName = "serializable")
