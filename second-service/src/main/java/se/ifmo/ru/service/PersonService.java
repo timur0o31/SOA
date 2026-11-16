@@ -9,7 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import se.ifmo.ru.dto.request.PersonSearchFilterDto;
-import se.ifmo.ru.error.exceptions.ResourceConflictException;
+import se.ifmo.ru.error.exceptions.PersonConflictException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
 import se.ifmo.ru.dto.request.PersonCreateDto;
 import se.ifmo.ru.dto.request.SearchDto;
@@ -56,7 +56,7 @@ public class PersonService {
         log.info("Удаление человека: personId={}", personId);
         if (personRepository.findByIdSerializable(personId)!=null) {
             long count = ticketStatisticsService.countByPerson(personId);
-            if (count > 0) throw new ResourceConflictException("Человек с id " + personId + " используется в билетах; количество: " + count);
+            if (count > 0) throw new PersonConflictException("Человек с id " + personId + " используется в билетах; количество: " + count);
             personRepository.deleteByIdSerializable(personId);
             log.info("Запрос на удаление человека выполнен: personId={}", personId);
         }else{
@@ -96,7 +96,13 @@ public class PersonService {
         if (total % requestDto.getSize() != 0) {
             totalPages++;
         }
-        List<Person> people = requestDto.getPage() >= totalPages? List.of() : personRepository.search(filter, PageRequest.ofPage(requestDto.getPage()+1).size(Math.toIntExact(requestDto.getSize())), sorts);
+        List<Person> people;
+        if (requestDto.getPage() >= totalPages) {
+            people = List.of();
+        } else {
+            PageRequest pageRequest = PageRequest.ofPage(requestDto.getPage() + 1).size(requestDto.getSize().intValue());
+            people = personRepository.search(filter, pageRequest, sorts);
+        }
         List<PersonResponseDto> content = people.stream().map(person -> personMapper.toPersonResponseDto(person)).toList();
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);
     }

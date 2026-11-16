@@ -19,21 +19,25 @@ public class TicketRepository {
     @PersistenceContext(unitName = "default")
     private EntityManager em;
 
-    @PersistenceContext(unitName = "serializable")
-    private EntityManager serializableEm;
+    @PersistenceContext(unitName = "repeatableRead")
+    private EntityManager repeatableReadEm;
 
     public List<Ticket> search(TicketSearchFilterDto filter, PageRequest pageRequest, List<Sort<Ticket>> sorts) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaBuilder cb = repeatableReadEm.getCriteriaBuilder();
         CriteriaQuery<Ticket> query = cb.createQuery(Ticket.class);
         Root<Ticket> root = query.from(Ticket.class);
         List<Order> orderBy = new ArrayList<>();
         if (sorts != null) {
             for (Sort<Ticket> sort : sorts) {
                 Path<?> column = root;
-                for (String part : sort.property().split("\\.")) {
+                for (String part : sort.property().split("[.]")) {
                     column = column.get(part);
                 }
-                orderBy.add(sort.isAscending() ? cb.asc(column) : cb.desc(column));
+                if (sort.isAscending()) {
+                    orderBy.add(cb.asc(column));
+                } else {
+                    orderBy.add(cb.desc(column));
+                }
             }
         }
         root.fetch("person", JoinType.LEFT);
@@ -41,19 +45,19 @@ public class TicketRepository {
                 .where(TicketCriteriaSearch.predicates(cb, root, filter))
                 .orderBy(orderBy);
         int offset = Math.toIntExact(Math.multiplyExact(pageRequest.page() - 1, (long) pageRequest.size()));
-        return em.createQuery(query)
+        return repeatableReadEm.createQuery(query)
                 .setFirstResult(offset)
                 .setMaxResults(pageRequest.size())
                 .getResultList();
     }
 
     public Long count(TicketSearchFilterDto filter) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaBuilder cb = repeatableReadEm.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Ticket> root = query.from(Ticket.class);
         query.select(cb.count(root))
                 .where(TicketCriteriaSearch.predicates(cb, root, filter));
-        return em.createQuery(query).getSingleResult();
+        return repeatableReadEm.createQuery(query).getSingleResult();
     }
 
     public Double getPriceSum(){
@@ -73,15 +77,12 @@ public class TicketRepository {
     }
 
     public Long countByPerson(Long personId) {
-        CriteriaBuilder cb = serializableEm.getCriteriaBuilder();
+        CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Ticket> ticket = query.from(Ticket.class);
         query.select(cb.count(ticket))
                 .where(cb.equal(ticket.get("person").get("id"), personId));
-        return serializableEm.createQuery(query).getSingleResult();
-    }
-    public void saveSerializable(Ticket ticket) {
-        serializableEm.persist(ticket);
+        return em.createQuery(query).getSingleResult();
     }
 
     public Ticket findById(Long id){

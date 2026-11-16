@@ -6,11 +6,6 @@ import java.util.List;
 import java.util.Set;
 
 public final class SearchValidation {
-    private SearchValidation() {}
-
-    public static <T extends Comparable<? super T>> boolean ordered(T from, T to) {
-        return from == null || to == null || from.compareTo(to) <= 0;
-    }
 
     public static void validateSorts(List<SortDto> sorts, Set<String> allowedFields) {
         if (sorts == null) return;

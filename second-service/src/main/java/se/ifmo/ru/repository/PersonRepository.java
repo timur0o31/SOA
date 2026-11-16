@@ -26,18 +26,24 @@ public class PersonRepository {
     @PersistenceContext(unitName = "serializable")
     private EntityManager serializableEm;
 
+    @PersistenceContext(unitName = "repeatableRead")
+    private EntityManager repeatableEm;
+
     public List<Person> search(PersonSearchFilterDto filter, PageRequest pageRequest, List<Sort<Person>> sorts) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaBuilder cb = repeatableEm.getCriteriaBuilder();
         CriteriaQuery<Person> query = cb.createQuery(Person.class);
         Root<Person> root = query.from(Person.class);
         List<Order> orderBy = new ArrayList<>();
         if (sorts != null) {
             for (Sort<Person> sort : sorts) {
                 Path<?> column = root;
-                for (String part : sort.property().split("\\.")) {
+                for (String part : sort.property().split("[.]")) {
                     column = column.get(part);
                 }
-                orderBy.add(sort.isAscending() ? cb.asc(column) : cb.desc(column));
+                if (sort.isAscending())
+                    orderBy.add(cb.asc(column));
+                else
+                    orderBy.add(cb.desc(column));
             }
         }
         query.select(root)
@@ -45,19 +51,19 @@ public class PersonRepository {
                 .orderBy(orderBy);
 
         int offset = Math.toIntExact(Math.multiplyExact(pageRequest.page() - 1, (long) pageRequest.size()));
-        return em.createQuery(query)
+        return repeatableEm.createQuery(query)
                 .setFirstResult(offset)
                 .setMaxResults(pageRequest.size())
                 .getResultList();
     }
 
     public Long count(PersonSearchFilterDto filter) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaBuilder cb = repeatableEm.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Person> root = query.from(Person.class);
         query.select(cb.count(root))
                 .where(PersonCriteriaSearch.predicates(cb, root, filter));
-        return em.createQuery(query).getSingleResult();
+        return repeatableEm.createQuery(query).getSingleResult();
     }
 
     public Person findById(Long id) {

@@ -78,14 +78,16 @@ public class TicketService {
         log.info("Запрос на обновление билета выполнен: ticketId={}", ticketId);
         return ticketMapper.toTicketResponseDto(ticket);
     }
-    //подумать вот тут уже реально можно задуматься про propagation и уровни изоляций
+
     private Person parsePerson(Long personId, PersonInputDto personDto) {
         if (personId == null && personDto == null)
             throw new RequestValidationException("person", "Укажите personId или person");
         if (personId != null && personDto != null)
             throw new RequestValidationException("person", "Нельзя одновременно указывать personId и person");
-        if (personId != null) return personService.getPersonById(personId);
-        if(personDto.id()!=null)return personService.getPersonById(personDto.id());
+        if (personId != null)
+            return personService.getPersonById(personId);
+        if(personDto.id()!=null)
+            return personService.getPersonById(personDto.id());
         return personService.savePersonEntity(personDto.toCreate());
     }
 
