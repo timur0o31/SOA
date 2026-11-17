@@ -53,11 +53,18 @@ public class TicketService {
     @Transactional(Transactional.TxType.REQUIRED)
     public TicketResponseDto sellWithDiscount(long ticketId, long personId, float discount) {
         log.info("Продажа билета со скидкой: ticketId={}, personId={}, скидка={}", ticketId, personId, discount);
-        TicketResponseDto source = findById(ticketId);
-        float price = (float) Math.max(1, source.price() * (1 - discount / 100.0));
-        TicketCreateDto sale = new TicketCreateDto(source.name(), source.coordinates(), price,
-                source.type(), personId, null, source.eventId());
-        return saveTicket(sale);
+        Ticket ticket = ticketRepository.findByIdSerializable(ticketId);
+        float price = (float) Math.max(1, ticket.getPrice() * (1 - discount / 100.0));
+        Person person = personService.getPersonByIdSerializable(personId);
+        Ticket sellTicket = new Ticket();
+        sellTicket.setName(ticket.getName());
+        sellTicket.setCoordinates(ticket.getCoordinates());
+        sellTicket.setPrice(price);
+        sellTicket.setType(ticket.getType());
+        sellTicket.setPerson(person);
+        sellTicket.setEventId(ticket.getEventId());
+        ticketRepository.saveSerializable(sellTicket);
+        return ticketMapper.toTicketResponseDto(sellTicket);
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -146,7 +153,7 @@ public class TicketService {
     @Transactional(Transactional.TxType.REQUIRED)
     public void cancelEvent(Long eventId) {
         log.info("Начало удаления билетов по eventId={}", eventId);
-        int deleted = ticketRepository.deleteByEventId(eventId);
+        int deleted = ticketRepository.deleteByEventIdSerializable(eventId);
         log.info("Запрос на удаление билетов выполнен: eventId={}, количество={}", eventId, deleted);
         if (deleted == 0) {
             throw new ResourceNotFoundException("Билеты на событие не найдены");

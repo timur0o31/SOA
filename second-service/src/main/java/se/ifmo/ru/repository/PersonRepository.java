@@ -23,11 +23,11 @@ public class PersonRepository {
     @PersistenceContext(unitName="default")
     private EntityManager em;
 
-    @PersistenceContext(unitName = "serializable")
-    private EntityManager serializableEm;
-
     @PersistenceContext(unitName = "repeatableRead")
     private EntityManager repeatableEm;
+
+    @PersistenceContext(unitName = "Serializable")
+    private EntityManager serializableEm;
 
     public List<Person> search(PersonSearchFilterDto filter, PageRequest pageRequest, List<Sort<Person>> sorts) {
         CriteriaBuilder cb = repeatableEm.getCriteriaBuilder();
@@ -90,12 +90,11 @@ public class PersonRepository {
     }
 
     public Person findByIdSerializable(Long id){
-        return serializableEm.find(Person.class, id);
-    }
-    public void deleteByIdSerializable(Long id){
         Person person = serializableEm.find(Person.class, id);
-        if (person != null){
-            serializableEm.remove(person);
+        if (person == null){
+            throw new ResourceNotFoundException("Человек с id " + id + " не найден");
         }
+        return person;
     }
+
 }

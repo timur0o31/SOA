@@ -22,6 +22,9 @@ public class TicketRepository {
     @PersistenceContext(unitName = "repeatableRead")
     private EntityManager repeatableReadEm;
 
+    @PersistenceContext(unitName = "Serializable")
+    private EntityManager serializableEm;
+
     public List<Ticket> search(TicketSearchFilterDto filter, PageRequest pageRequest, List<Sort<Ticket>> sorts) {
         CriteriaBuilder cb = repeatableReadEm.getCriteriaBuilder();
         CriteriaQuery<Ticket> query = cb.createQuery(Ticket.class);
@@ -76,6 +79,14 @@ public class TicketRepository {
                 .executeUpdate();
     }
 
+    public int deleteByEventIdSerializable(Long eventId) {
+        CriteriaBuilder cb = serializableEm.getCriteriaBuilder();
+        CriteriaDelete<Ticket> query = cb.createCriteriaDelete(Ticket.class);
+        Root<Ticket> ticket = query.from(Ticket.class);
+        query.where(cb.equal(ticket.get("eventId"), eventId));
+        return serializableEm.createQuery(query).executeUpdate();
+    }
+
     public Long countByPerson(Long personId) {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
@@ -108,5 +119,16 @@ public class TicketRepository {
         } else {
             throw new ResourceNotFoundException("Билет с id " + id + " не найден");
         }
+    }
+
+    public void saveSerializable(Ticket ticket){
+        serializableEm.persist(ticket);
+    }
+    public Ticket findByIdSerializable(Long id){
+        Ticket ticket = serializableEm.find(Ticket.class, id);
+        if (ticket == null){
+            throw new ResourceNotFoundException("Билет с id " + id + " не найден");
+        }
+        return ticket;
     }
 }
