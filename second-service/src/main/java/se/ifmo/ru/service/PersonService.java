@@ -8,8 +8,6 @@ import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.hibernate.exception.ConstraintViolationException;
-import org.postgresql.util.PSQLState;
 import se.ifmo.ru.dto.request.PersonSearchFilterDto;
 import se.ifmo.ru.error.exceptions.PersonConflictException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
@@ -53,21 +51,13 @@ public class PersonService {
         log.info("Запрос на создание человека выполнен.");
         return person;
     }
-    //суть в том что пока мы проверяем countByPerson, другой поток может создать билет с этим человеком, поэтому нужно отловить ошибку на уровне базы данных, которая будет выброшена при попытке удалить человека, который используется в билетах
     @Transactional(Transactional.TxType.REQUIRED)
     public void deletePersonById(Long personId){
         log.info("Удаление человека: personId={}", personId);
         if (personRepository.findById(personId)!=null) {
             long count = ticketStatisticsService.countByPerson(personId);
             if (count > 0) throw new PersonConflictException("Человек с id " + personId + " используется в билетах; количество: " + count);
-            try {
-                personRepository.deleteById(personId);
-            } catch (ConstraintViolationException e) {
-                if (PSQLState.FOREIGN_KEY_VIOLATION.getState().equals(e.getSQLState())) {
-                    throw new PersonConflictException("Человек с id " + personId + " используется в билетах");
-                }
-                throw e;
-            }
+            personRepository.deleteById(personId);
             log.info("Запрос на удаление человека выполнен: personId={}", personId);
         }else{
             throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
