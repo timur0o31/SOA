@@ -54,10 +54,10 @@ public class PersonService {
     @Transactional(Transactional.TxType.REQUIRED)
     public void deletePersonById(Long personId){
         log.info("Удаление человека: personId={}", personId);
-        if (personRepository.findByIdSerializable(personId)!=null) {
+        if (personRepository.findById(personId)!=null) {
             long count = ticketStatisticsService.countByPerson(personId);
             if (count > 0) throw new PersonConflictException("Человек с id " + personId + " используется в билетах; количество: " + count);
-            personRepository.deleteByIdSerializable(personId);
+            personRepository.deleteById(personId);
             log.info("Запрос на удаление человека выполнен: personId={}", personId);
         }else{
             throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
@@ -113,5 +113,9 @@ public class PersonService {
 
     public Person getPersonById(Long personId) {
         return personRepository.findById(personId);
+    }
+
+    public Person getPersonByIdSerializable(Long personId) {
+        return personRepository.findByIdSerializable(personId);
     }
 }
