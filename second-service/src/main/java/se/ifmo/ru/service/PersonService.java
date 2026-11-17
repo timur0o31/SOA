@@ -7,7 +7,11 @@ import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import org.hibernate.StaleObjectStateException;
+import org.hibernate.exception.ConstraintViolationException;
+import org.postgresql.util.PSQLState;
 import se.ifmo.ru.dto.request.PersonSearchFilterDto;
 import se.ifmo.ru.error.exceptions.PersonConflictException;
 import se.ifmo.ru.error.exceptions.ResourceNotFoundException;
@@ -31,6 +35,7 @@ public class PersonService {
     @Inject
     private TicketStatisticsService ticketStatisticsService;
 
+    @Transactional(Transactional.TxType.REQUIRED)
     public PersonResponseDto findById(Long personId) {
         log.debug("Поиск человека: personId={}", personId);
         Person person = personRepository.findById(personId);
@@ -50,14 +55,21 @@ public class PersonService {
         log.info("Запрос на создание человека выполнен.");
         return person;
     }
-
+    //суть в том что пока мы проверяем countByPerson, другой поток может создать билет с этим человеком, поэтому нужно отловить ошибку на уровне базы данных, которая будет выброшена при попытке удалить человека, который используется в билетах
     @Transactional(Transactional.TxType.REQUIRED)
     public void deletePersonById(Long personId){
         log.info("Удаление человека: personId={}", personId);
         if (personRepository.findById(personId)!=null) {
             long count = ticketStatisticsService.countByPerson(personId);
             if (count > 0) throw new PersonConflictException("Человек с id " + personId + " используется в билетах; количество: " + count);
-            personRepository.deleteById(personId);
+            try {
+                personRepository.deleteById(personId);
+            } catch (ConstraintViolationException e) {
+                if (PSQLState.FOREIGN_KEY_VIOLATION.getState().equals(e.getSQLState())) {
+                    throw new PersonConflictException("Человек с id " + personId + " используется в билетах");
+                }
+                throw e;
+            }
             log.info("Запрос на удаление человека выполнен: personId={}", personId);
         }else{
             throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
@@ -68,11 +80,21 @@ public class PersonService {
         log.info("Обновление человека: personId={}", personId);
         Person person = personRepository.findById(personId);
         personMapper.updatePersonFromDto(personCreateDto, person);
-        personRepository.update(person);
+        try {
+            personRepository.update(person);
+        } catch (OptimisticLockException e) {
+            if (e.getCause() instanceof StaleObjectStateException stale
+                    && Person.class.getName().equals(stale.getEntityName())
+                    && personId.equals(stale.getIdentifier())) {
+                throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
+            }
+            throw e;
+        }
         log.info("Запрос на обновление человека выполнен: personId={}", personId);
         return personMapper.toPersonResponseDto(person);
     }
 
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public ResponsePaginationDto<PersonResponseDto> search(SearchDto<PersonSearchFilterDto> requestDto) {
         log.info("Поиск людей: страница={}, размер={}", requestDto.getPage(), requestDto.getSize());
         SearchValidation.validateSorts(requestDto.getSort(), Set.of("id", "birthday", "weight", "location.x", "location.y", "location.name"));
@@ -107,6 +129,7 @@ public class PersonService {
         return ResponsePaginationDto.ans(content,requestDto.getPage(),requestDto.getSize(),total);
     }
 
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public ResponsePaginationDto<PersonResponseDto> getPersons(long page, int size) {
         return search(new SearchDto<PersonSearchFilterDto>(null, page, (long) size, null));
     }
