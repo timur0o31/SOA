@@ -76,6 +76,7 @@ public class PersonRepository {
 
     public void update(Person person){
         em.merge(person);
+        em.flush();
     }
 
     public void save(Person person){
@@ -86,6 +87,7 @@ public class PersonRepository {
         Person person = em.find(Person.class, id);
         if (person != null){
             em.remove(person);
+            em.flush();
         }
     }
 
