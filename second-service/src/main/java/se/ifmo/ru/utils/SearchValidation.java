@@ -13,9 +13,6 @@ public final class SearchValidation {
             if (sort == null || sort.field() == null || !allowedFields.contains(sort.field())) {
                 throw new RequestValidationException("sort.field", "Неизвестное поле сортировки");
             }
-            if (!"ASC".equals(sort.direction()) && !"DESC".equals(sort.direction())) {
-                throw new RequestValidationException("sort.direction", "Ожидается ASC или DESC");
-            }
         }
     }
 }
