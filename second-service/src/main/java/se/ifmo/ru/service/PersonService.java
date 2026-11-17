@@ -7,9 +7,7 @@ import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
-import org.hibernate.StaleObjectStateException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.postgresql.util.PSQLState;
 import se.ifmo.ru.dto.request.PersonSearchFilterDto;
@@ -80,16 +78,7 @@ public class PersonService {
         log.info("Обновление человека: personId={}", personId);
         Person person = personRepository.findById(personId);
         personMapper.updatePersonFromDto(personCreateDto, person);
-        try {
-            personRepository.update(person);
-        } catch (OptimisticLockException e) {
-            if (e.getCause() instanceof StaleObjectStateException stale
-                    && Person.class.getName().equals(stale.getEntityName())
-                    && personId.equals(stale.getIdentifier())) {
-                throw new ResourceNotFoundException("Человек с id " + personId + " не найден");
-            }
-            throw e;
-        }
+        personRepository.update(person);
         log.info("Запрос на обновление человека выполнен: personId={}", personId);
         return personMapper.toPersonResponseDto(person);
     }
