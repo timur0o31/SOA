@@ -31,7 +31,7 @@
             <property name="hibernate.enhancer.enableAssociationManagement" value="false"/>
         </properties>
     </persistence-unit>
-    <persistence-unit name="serializable" transaction-type="JTA">
+    <persistence-unit name="Serializable" transaction-type="JTA">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <jta-data-source>jdbc/Serializable</jta-data-source>
         <properties>
